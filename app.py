@@ -12,7 +12,7 @@ st.title("🧠 MRI Brain Tumor Detection System")
 st.write("Upload an MRI image to detect if there is a tumor and what type it is.")
 
 # --- MODEL URL ---
-MODEL_PATH = "https://huggingface.co/yashika2212/brain-tumor/resolve/main/model2.h5"
+MODEL_PATH = "https://huggingface.co/yashika2212/brain-tumor-detection/resolve/main/model_new.keras"
 
 # --- DOWNLOAD AND LOAD MODEL (CACHED) ---
 @st.cache_resource
@@ -64,6 +64,7 @@ if uploaded_file is not None:
                 st.error(f"Error during prediction: {e}")
 else:
     st.info("Please upload an MRI image to begin detection.")
+
 
 
 
