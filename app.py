@@ -4,7 +4,6 @@ import numpy as np
 from PIL import Image
 import requests
 from io import BytesIO
-import keras
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Brain Tumor Detection", page_icon="🧠", layout="centered")
@@ -18,17 +17,14 @@ MODEL_PATH = "https://huggingface.co/ynathani22/brain-tumor/resolve/main/model2.
 # --- DOWNLOAD AND LOAD MODEL (CACHED) ---
 @st.cache_resource
 def load_model():
-    # Enable compatibility for legacy .h5 models (old Keras 2.x format)
-    keras.config.disable_legacy_serialization(False)
-
     st.write("✅ Model downloaded successfully!")
     response = requests.get(MODEL_PATH)
     response.raise_for_status()
     with open("model2.h5", "wb") as f:
         f.write(response.content)
 
-    # Load the legacy model
-    model = tf.keras.models.load_model("model2.h5", compile=False)
+    # Load model in compatibility mode (safe_mode=False allows legacy .h5)
+    model = tf.keras.models.load_model("model2.h5", compile=False, safe_mode=False)
     return model
 
 
@@ -68,6 +64,8 @@ if uploaded_file is not None:
                 st.error(f"Error during prediction: {e}")
 else:
     st.info("Please upload an MRI image to begin detection.")
+
+
 
 
 
