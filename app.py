@@ -6,25 +6,25 @@ from PIL import Image
 import requests
 import os
 
-# --- Page setup ---
+# --- PAGE SETUP ---
 st.set_page_config(page_title="Brain Tumor Detection", page_icon="🧠", layout="centered")
 st.title("🧠 MRI Brain Tumor Detection System")
 st.write("Upload an MRI image to detect if there is a tumor and what type it is.")
 
-# --- Model download from Google Drive ---
+# --- MODEL DOWNLOAD SETTINGS ---
 MODEL_PATH = "model2.h5"
-MODEL_URL = "https://drive.google.com/uc?export=download&id=1aaK3MpR3RDzIrqMmbTkO4KvtriMV9goB"
+MODEL_URL = "https://huggingface.co/yashika2212/brain-tumor/resolve/main/model2.h5"  # ✅ Your Hugging Face link
 
-# Download model if not already present
+# --- DOWNLOAD MODEL IF NOT ALREADY PRESENT ---
 if not os.path.exists(MODEL_PATH):
-    with st.spinner("Downloading model... Please wait (~120MB)"):
+    with st.spinner("Downloading model from Hugging Face... (this may take a minute)"):
         r = requests.get(MODEL_URL, stream=True)
         with open(MODEL_PATH, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
         st.success("✅ Model downloaded successfully!")
 
-# --- Load model (cached so it loads once) ---
+# --- LOAD MODEL (CACHED) ---
 @st.cache_resource
 def load_model():
     model = tf.keras.models.load_model(MODEL_PATH)
@@ -32,10 +32,10 @@ def load_model():
 
 model = load_model()
 
-# --- Class labels ---
+# --- CLASS LABELS ---
 class_labels = ['pituitary', 'glioma', 'notumor', 'meningioma']
 
-# --- Image upload section ---
+# --- IMAGE UPLOAD SECTION ---
 uploaded_file = st.file_uploader("Upload an MRI image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
@@ -43,8 +43,8 @@ if uploaded_file is not None:
     st.image(image, caption="Uploaded MRI Image", use_container_width=True)
 
     if st.button("Analyze Image"):
-        with st.spinner("Analyzing... Please wait"):
-            # Preprocess image
+        with st.spinner("Analyzing image... Please wait"):
+            # Preprocess the image
             IMAGE_SIZE = 128
             img = image.resize((IMAGE_SIZE, IMAGE_SIZE))
             img_array = img_to_array(img) / 255.0
@@ -61,4 +61,19 @@ if uploaded_file is not None:
                 st.success(f"🧠 **No Tumor Detected**\nConfidence: {confidence_score*100:.2f}%")
             else:
                 st.error(f"⚠️ **Tumor Detected: {result.capitalize()}**\nConfidence: {confidence_score*100:.2f}%")
+
+# --- SIDEBAR INFORMATION ---
+st.sidebar.title("ℹ️ About this App")
+st.sidebar.info(
+    """
+    This application uses a Convolutional Neural Network (CNN) model 
+    trained on MRI scans to detect **brain tumors** and identify their type.
+
+    **Model Source:** Uploaded by Yashika  
+    **Framework:** TensorFlow / Keras  
+    **Interface:** Streamlit
+    """
+)
+
+
 
