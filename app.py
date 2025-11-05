@@ -20,13 +20,12 @@ def load_model():
     st.write("✅ Model downloaded successfully!")
     response = requests.get(MODEL_PATH)
     response.raise_for_status()
-    with open("model2.h5", "wb") as f:
+    with open("model_new.keras", "wb") as f:
         f.write(response.content)
 
-    # Load model in compatibility mode (safe_mode=False allows legacy .h5)
-    model = tf.keras.models.load_model("model2.h5", compile=False, safe_mode=False)
+    # Load model (modern .keras format)
+    model = tf.keras.models.load_model("model_new.keras", compile=False)
     return model
-
 
 # Load once and cache
 model = load_model()
@@ -64,6 +63,8 @@ if uploaded_file is not None:
                 st.error(f"Error during prediction: {e}")
 else:
     st.info("Please upload an MRI image to begin detection.")
+
+
 
 
 
