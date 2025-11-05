@@ -12,7 +12,7 @@ st.title("🧠 MRI Brain Tumor Detection System")
 st.write("Upload an MRI image to detect if there is a tumor and what type it is.")
 
 # --- MODEL URL ---
-MODEL_PATH = "https://huggingface.co/yashika2212/brain-tumor-detection/resolve/main/model_new.keras"
+MODEL_PATH = "https://huggingface.co/yashika2212/brain2/resolve/main/model_fixed.keras"
 
 # --- DOWNLOAD AND LOAD MODEL (CACHED) ---
 @st.cache_resource
@@ -20,20 +20,17 @@ def load_model():
     st.write("✅ Model downloaded successfully!")
     response = requests.get(MODEL_PATH)
     response.raise_for_status()
-    with open("model_new.keras", "wb") as f:
+    with open("model_fixed.keras", "wb") as f:
         f.write(response.content)
 
-    # Load model (modern .keras format)
-    model = tf.keras.models.load_model("model_new.keras", compile=False)
+    model = tf.keras.models.load_model("model_fixed.keras", compile=False)
     return model
 
-# Load once and cache
 model = load_model()
 
 # --- CLASS LABELS ---
 class_labels = ['pituitary', 'glioma', 'notumor', 'meningioma']
 
-# --- IMAGE PREPROCESSING ---
 def preprocess_image(image):
     image = image.resize((150, 150))  # adjust to your model’s input size
     img_array = np.array(image) / 255.0
@@ -42,10 +39,7 @@ def preprocess_image(image):
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
-
-# --- FILE UPLOAD ---
 uploaded_file = st.file_uploader("📤 Upload MRI Image", type=["jpg", "jpeg", "png"])
-
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
     st.image(image, caption="🩻 Uploaded MRI", use_container_width=True)
@@ -63,6 +57,8 @@ if uploaded_file is not None:
                 st.error(f"Error during prediction: {e}")
 else:
     st.info("Please upload an MRI image to begin detection.")
+
+
 
 
 
