@@ -15,11 +15,11 @@ st.write("Upload an MRI image to detect if there is a tumor and what type it is.
 # --- MODEL URL ---
 MODEL_PATH = "https://huggingface.co/ynathani22/brain-tumor/resolve/main/model2.h5"
 
-# --- DOWNLOAD MODEL ---
+# --- DOWNLOAD AND LOAD MODEL (CACHED) ---
 @st.cache_resource
 def load_model():
-    # Enable legacy mode for older H5 models (Keras 2.x)
-    keras.config.enable_legacy_serialization()
+    # Enable compatibility for legacy .h5 models (old Keras 2.x format)
+    keras.config.disable_legacy_serialization(False)
 
     st.write("✅ Model downloaded successfully!")
     response = requests.get(MODEL_PATH)
@@ -27,11 +27,12 @@ def load_model():
     with open("model2.h5", "wb") as f:
         f.write(response.content)
 
+    # Load the legacy model
     model = tf.keras.models.load_model("model2.h5", compile=False)
     return model
 
 
-# Load model once and cache it
+# Load once and cache
 model = load_model()
 
 # --- CLASS LABELS ---
@@ -39,10 +40,10 @@ class_labels = ['pituitary', 'glioma', 'notumor', 'meningioma']
 
 # --- IMAGE PREPROCESSING ---
 def preprocess_image(image):
-    image = image.resize((150, 150))  # adjust size to your training input
+    image = image.resize((150, 150))  # adjust to your model’s input size
     img_array = np.array(image) / 255.0
     if len(img_array.shape) == 2:  # grayscale → RGB
-        img_array = np.stack((img_array,)*3, axis=-1)
+        img_array = np.stack((img_array,) * 3, axis=-1)
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
@@ -62,12 +63,13 @@ if uploaded_file is not None:
                 class_index = np.argmax(prediction)
                 tumor_type = class_labels[class_index]
                 confidence = np.max(prediction) * 100
-
                 st.success(f"**Detected Tumor Type:** {tumor_type.capitalize()} ({confidence:.2f}% confidence)")
             except Exception as e:
                 st.error(f"Error during prediction: {e}")
 else:
     st.info("Please upload an MRI image to begin detection.")
+
+
 
 
 
