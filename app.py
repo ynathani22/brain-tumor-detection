@@ -1,79 +1,75 @@
 import streamlit as st
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import img_to_array
 import numpy as np
 from PIL import Image
 import requests
-import os
+from io import BytesIO
+import keras
 
-# --- PAGE SETUP ---
+# --- PAGE CONFIG ---
 st.set_page_config(page_title="Brain Tumor Detection", page_icon="🧠", layout="centered")
+
 st.title("🧠 MRI Brain Tumor Detection System")
 st.write("Upload an MRI image to detect if there is a tumor and what type it is.")
 
-# --- MODEL DOWNLOAD SETTINGS ---
-MODEL_PATH = "model2.h5"
-MODEL_URL = "https://huggingface.co/yashika2212/brain-tumor/resolve/main/model2.h5"  # ✅ Your Hugging Face link
+# --- MODEL URL ---
+MODEL_PATH = "https://huggingface.co/ynathani22/brain-tumor/resolve/main/model2.h5"
 
-# --- DOWNLOAD MODEL IF NOT ALREADY PRESENT ---
-if not os.path.exists(MODEL_PATH):
-    with st.spinner("Downloading model from Hugging Face... (this may take a minute)"):
-        r = requests.get(MODEL_URL, stream=True)
-        with open(MODEL_PATH, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
-        st.success("✅ Model downloaded successfully!")
-
-# --- LOAD MODEL (CACHED) ---
+# --- DOWNLOAD MODEL ---
 @st.cache_resource
 def load_model():
-    model = tf.keras.models.load_model(MODEL_PATH)
+    # Enable legacy mode for older H5 models (Keras 2.x)
+    keras.config.enable_legacy_serialization()
+
+    st.write("✅ Model downloaded successfully!")
+    response = requests.get(MODEL_PATH)
+    response.raise_for_status()
+    with open("model2.h5", "wb") as f:
+        f.write(response.content)
+
+    model = tf.keras.models.load_model("model2.h5", compile=False)
     return model
 
+
+# Load model once and cache it
 model = load_model()
 
 # --- CLASS LABELS ---
 class_labels = ['pituitary', 'glioma', 'notumor', 'meningioma']
 
-# --- IMAGE UPLOAD SECTION ---
-uploaded_file = st.file_uploader("Upload an MRI image", type=["jpg", "jpeg", "png"])
+# --- IMAGE PREPROCESSING ---
+def preprocess_image(image):
+    image = image.resize((150, 150))  # adjust size to your training input
+    img_array = np.array(image) / 255.0
+    if len(img_array.shape) == 2:  # grayscale → RGB
+        img_array = np.stack((img_array,)*3, axis=-1)
+    img_array = np.expand_dims(img_array, axis=0)
+    return img_array
+
+
+# --- FILE UPLOAD ---
+uploaded_file = st.file_uploader("📤 Upload MRI Image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded MRI Image", use_container_width=True)
+    image = Image.open(uploaded_file)
+    st.image(image, caption="🩻 Uploaded MRI", use_container_width=True)
 
-    if st.button("Analyze Image"):
-        with st.spinner("Analyzing image... Please wait"):
-            # Preprocess the image
-            IMAGE_SIZE = 128
-            img = image.resize((IMAGE_SIZE, IMAGE_SIZE))
-            img_array = img_to_array(img) / 255.0
-            img_array = np.expand_dims(img_array, axis=0)
+    if st.button("🔍 Predict Tumor Type"):
+        with st.spinner("Analyzing MRI..."):
+            try:
+                img_array = preprocess_image(image)
+                prediction = model.predict(img_array)
+                class_index = np.argmax(prediction)
+                tumor_type = class_labels[class_index]
+                confidence = np.max(prediction) * 100
 
-            # Make prediction
-            predictions = model.predict(img_array)
-            predicted_class_index = np.argmax(predictions, axis=1)[0]
-            confidence_score = np.max(predictions, axis=1)[0]
-            result = class_labels[predicted_class_index]
+                st.success(f"**Detected Tumor Type:** {tumor_type.capitalize()} ({confidence:.2f}% confidence)")
+            except Exception as e:
+                st.error(f"Error during prediction: {e}")
+else:
+    st.info("Please upload an MRI image to begin detection.")
 
-            # Display result
-            if result == "notumor":
-                st.success(f"🧠 **No Tumor Detected**\nConfidence: {confidence_score*100:.2f}%")
-            else:
-                st.error(f"⚠️ **Tumor Detected: {result.capitalize()}**\nConfidence: {confidence_score*100:.2f}%")
 
-# --- SIDEBAR INFORMATION ---
-st.sidebar.title("ℹ️ About this App")
-st.sidebar.info(
-    """
-    This application uses a Convolutional Neural Network (CNN) model 
-    trained on MRI scans to detect **brain tumors** and identify their type.
-
-    **Model Source:** Uploaded by Yashika  
-    **Framework:** TensorFlow / Keras  
-    **Interface:** Streamlit
-    """
-)
 
 
 
