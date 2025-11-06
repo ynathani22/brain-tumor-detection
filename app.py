@@ -12,7 +12,7 @@ st.title("🧠 MRI Brain Tumor Detection System")
 st.write("Upload an MRI image to detect if there is a tumor and what type it is.")
 
 # --- MODEL URL ---
-MODEL_PATH = "https://huggingface.co/yashika2212/brain3/resolve/main/model_final.keras"
+MODEL_PATH = "https://huggingface.co/yashika2212/brain-new/resolve/main/model.h5"
 
 # --- DOWNLOAD AND LOAD MODEL (CACHED) ---
 @st.cache_resource
@@ -20,11 +20,11 @@ def load_model():
     st.write("✅ Model downloaded successfully!")
     response = requests.get(MODEL_PATH)
     response.raise_for_status()
-    with open("model_final.keras", "wb") as f:
+    with open("model.h5", "wb") as f:
         f.write(response.content)
 
     # Load the repaired model
-    model = tf.keras.models.load_model("model_final.keras", compile=False)
+    model = tf.keras.models.load_model("model.h5", compile=False)
     return model
 
 model = load_model()
@@ -58,6 +58,7 @@ if uploaded_file is not None:
                 st.error(f"Error during prediction: {e}")
 else:
     st.info("Please upload an MRI image to begin detection.")
+
 
 
 
